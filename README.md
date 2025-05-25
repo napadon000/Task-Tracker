@@ -9,3 +9,6 @@ available command :
 - chnageTaskStatus
 - changeTaskDescription
 - deleteTask
+
+config MONGODB_URI and JWT_TOKEN in .env
+config port in main.go
