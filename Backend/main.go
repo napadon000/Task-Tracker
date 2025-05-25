@@ -15,7 +15,7 @@ func main() {
 	app := fiber.New()
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:3000",
+		AllowOrigins: "http://localhost:3221",
 		AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 	}))
@@ -24,6 +24,6 @@ func main() {
 	routes.UserRoute(userGroup)
 	routes.TaskRoute(userGroup)
 
-	app.Listen(":8080")
+	app.Listen(":3222")
 
 }
