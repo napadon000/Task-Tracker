@@ -15,7 +15,7 @@ import (
 )
 
 // func GetUserByID(c *fiber.Ctx) error {
-// 	UserCollection := configs.MongoClient.Database("tasktracker").Collection("user")
+// 	configs.UserCollection := configs.MongoClient.Database("tasktracker").Collection("user")
 
 // 	userID, err := bson.ObjectIDFromHex(c.Params("id"))
 // 	if err != nil {
@@ -25,7 +25,7 @@ import (
 // 	filter := bson.M{"_id": userID}
 
 // 	var user models.User
-// 	err = UserCollection.FindOne(context.TODO(), filter).Decode(&user)
+// 	err = configs.UserCollection.FindOne(context.TODO(), filter).Decode(&user)
 // 	if err != nil {
 
 // 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -38,7 +38,7 @@ import (
 // }
 
 func CreateUser(c *fiber.Ctx) error {
-	UserCollection := configs.MongoClient.Database("tasktracker").Collection("user")
+	// configs.UserCollection := configs.MongoClient.Database("tasktracker").Collection("user")
 
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
@@ -46,7 +46,7 @@ func CreateUser(c *fiber.Ctx) error {
 	}
 
 	//validation
-	models.UserValidate.RegisterValidation("username_format", models.ValidateUsername)
+	// models.UserValidate.RegisterValidation("username_format", models.ValidateUsername)
 
 	if err := models.UserValidate.Struct(user); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
@@ -63,7 +63,7 @@ func CreateUser(c *fiber.Ctx) error {
 		user.Tasks = []bson.ObjectID{}
 	}
 
-	result, err := UserCollection.InsertOne(context.TODO(), user)
+	result, err := configs.UserCollection.InsertOne(context.TODO(), user)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			return c.Status(fiber.StatusConflict).SendString("Email or Username already exists")
@@ -77,7 +77,7 @@ func CreateUser(c *fiber.Ctx) error {
 }
 
 func LoginUser(c *fiber.Ctx) error {
-	UserCollection := configs.MongoClient.Database("tasktracker").Collection("user")
+	// configs.UserCollection := configs.MongoClient.Database("tasktracker").Collection("user")
 
 	var user models.User
 	if err := c.BodyParser(&user); err != nil {
@@ -85,14 +85,14 @@ func LoginUser(c *fiber.Ctx) error {
 	}
 
 	// validation
-	models.UserValidate.RegisterValidation("username_format", models.Void)
+	// models.UserValidate.RegisterValidation("username_format", models.Void)
 	if err := models.UserValidate.Struct(user); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
 	}
 
 	filter := bson.M{"email": user.Email}
 	var foundUser models.User
-	err := UserCollection.FindOne(context.TODO(), filter).Decode(&foundUser)
+	err := configs.UserCollection.FindOne(context.TODO(), filter).Decode(&foundUser)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).SendString("Invalid email")
 	}

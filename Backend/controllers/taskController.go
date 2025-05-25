@@ -6,6 +6,7 @@ import (
 	"os"
 	"project/configs"
 	"project/models"
+	"slices"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -110,24 +111,44 @@ func GetAllTasks(c *fiber.Ctx) error {
 func ChangeTaskStatus(c *fiber.Ctx) error {
 	taskID := c.Params("id")
 	if taskID == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Task ID is required")
+		return c.Status(fiber.StatusBadRequest).JSON("Task ID is required")
 	}
 
 	var task models.Task
 	if err := c.BodyParser(&task); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
 	if task.Status == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Task status is required")
+		return c.Status(fiber.StatusBadRequest).JSON("Task status is required")
 	}
 
-	id, err := bson.ObjectIDFromHex(taskID)
+	taskid, err := bson.ObjectIDFromHex(taskID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid task ID")
+		return c.Status(fiber.StatusBadRequest).JSON("Invalid task ID")
 	}
 
-	filter := bson.M{"_id": id}
+	//check taskID must be in user's tasks
+	userID := cliam["id"].(string)
+	userid, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
+	}
+
+	filter := bson.M{"_id": userid}
+	var user models.User
+	err = configs.UserCollection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": err.Error(),
+			"id":    filter,
+		})
+	}
+	if !slices.Contains(user.Tasks, taskid) {
+		return c.Status(fiber.StatusForbidden).JSON("You do not have permission to change this task")
+	}
+
+	filter = bson.M{"_id": taskid}
 	update := bson.M{
 		"$set": bson.M{
 			"status":     task.Status,
@@ -137,11 +158,11 @@ func ChangeTaskStatus(c *fiber.Ctx) error {
 
 	result, err := configs.TaskCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error updating task status")
+		return c.Status(fiber.StatusInternalServerError).JSON("Error updating task status")
 	}
 
 	if result.MatchedCount == 0 {
-		return c.Status(fiber.StatusNotFound).SendString("Task not found")
+		return c.Status(fiber.StatusNotFound).JSON("Task not found")
 	}
 
 	return c.JSON(fiber.Map{"message": "Task status updated successfully"})
@@ -153,12 +174,32 @@ func DeleteTask(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).SendString("Task ID is required")
 	}
 
-	id, err := bson.ObjectIDFromHex(taskID)
+	taskid, err := bson.ObjectIDFromHex(taskID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Invalid task ID")
 	}
 
-	filter := bson.M{"_id": id}
+	//check taskID must be in user's tasks
+	userID := cliam["id"].(string)
+	userid, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
+	}
+
+	filter := bson.M{"_id": userid}
+	var user models.User
+	err = configs.UserCollection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": err.Error(),
+			"id":    filter,
+		})
+	}
+	if !slices.Contains(user.Tasks, taskid) {
+		return c.Status(fiber.StatusForbidden).JSON("You do not have permission to change this task")
+	}
+
+	filter = bson.M{"_id": taskid}
 	result, err := configs.TaskCollection.DeleteOne(context.TODO(), filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error deleting task")
@@ -168,20 +209,13 @@ func DeleteTask(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).SendString("Task not found")
 	}
 
-	// Remove the task ID from the user's tasks array
-	userID := cliam["id"].(string)
-	userObjectID, err := bson.ObjectIDFromHex(userID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
-	}
-
 	update := bson.M{
 		"$pull": bson.M{
-			"tasks": id,
+			"tasks": taskid,
 		},
 	}
 
-	_, err = configs.UserCollection.UpdateOne(context.TODO(), bson.M{"_id": userObjectID}, update)
+	_, err = configs.UserCollection.UpdateOne(context.TODO(), bson.M{"_id": userid}, update)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Error updating user's tasks")
 	}
@@ -192,24 +226,44 @@ func DeleteTask(c *fiber.Ctx) error {
 func UpdateTaskDescription(c *fiber.Ctx) error {
 	taskID := c.Params("id")
 	if taskID == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Task ID is required")
+		return c.Status(fiber.StatusBadRequest).JSON("Task ID is required")
 	}
 
 	var task models.Task
 	if err := c.BodyParser(&task); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+		return c.Status(fiber.StatusBadRequest).JSON(err.Error())
 	}
 
 	if task.Description == "" {
-		return c.Status(fiber.StatusBadRequest).SendString("Task description is required")
+		return c.Status(fiber.StatusBadRequest).JSON("Task description is required")
 	}
 
-	id, err := bson.ObjectIDFromHex(taskID)
+	taskid, err := bson.ObjectIDFromHex(taskID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString("Invalid task ID")
+		return c.Status(fiber.StatusBadRequest).JSON("Invalid task ID")
 	}
 
-	filter := bson.M{"_id": id}
+	//check taskID must be in user's tasks
+	userID := cliam["id"].(string)
+	userid, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Invalid user ID")
+	}
+
+	filter := bson.M{"_id": userid}
+	var user models.User
+	err = configs.UserCollection.FindOne(context.TODO(), filter).Decode(&user)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": err.Error(),
+			"id":    filter,
+		})
+	}
+	if !slices.Contains(user.Tasks, taskid) {
+		return c.Status(fiber.StatusForbidden).SendString("You do not have permission to change this task")
+	}
+
+	filter = bson.M{"_id": taskid}
 	update := bson.M{
 		"$set": bson.M{
 			"description": task.Description,
@@ -219,11 +273,11 @@ func UpdateTaskDescription(c *fiber.Ctx) error {
 
 	result, err := configs.TaskCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error updating task description")
+		return c.Status(fiber.StatusInternalServerError).JSON("Error updating task description")
 	}
 
 	if result.MatchedCount == 0 {
-		return c.Status(fiber.StatusNotFound).SendString("Task not found")
+		return c.Status(fiber.StatusNotFound).JSON("Task not found")
 	}
 
 	return c.JSON(fiber.Map{"message": "Task description updated successfully"})

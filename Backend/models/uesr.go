@@ -8,8 +8,8 @@ import (
 )
 
 type User struct {
-	ID       bson.ObjectID   `json:"id,omitempty" bson:"_id,omitempty"`
-	Username string          `json:"username" bson:"username" validate:"required,min=3,max=20,username_format"`
+	ID bson.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	// Username string          `json:"username" bson:"username" validate:"required,min=3,max=20,username_format"`
 	Email    string          `json:"email" bson:"email" validate:"required,email,max=100"`
 	Password string          `json:"password" bson:"password" validate:"required,min=8,max=128,password_format"`
 	Tasks    []bson.ObjectID `json:"tasks" bson:"tasks" `
@@ -23,13 +23,13 @@ type User struct {
 // }
 
 // Custom username validation
-func ValidateUsername(fl validator.FieldLevel) bool {
-	username := fl.Field().String()
-	// Username can contain letters, numbers, underscores, and hyphens
-	// Must start with a letter
-	matched, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_-]*$`, username)
-	return matched
-}
+// func ValidateUsername(fl validator.FieldLevel) bool {
+// 	username := fl.Field().String()
+// 	// Username can contain letters, numbers, underscores, and hyphens
+// 	// Must start with a letter
+// 	matched, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_-]*$`, username)
+// 	return matched
+// }
 
 // Complex password validation
 func ValidatePassword(fl validator.FieldLevel) bool {

@@ -12,5 +12,5 @@ func TaskRoute(app fiber.Router) {
 	app.Get("/task/gettasks", controllers.GetAllTasks)
 	app.Patch("/task/updatestatus/:id", controllers.ChangeTaskStatus)
 	app.Patch("/task/updatetask/:id", controllers.UpdateTaskDescription)
-	app.Delete("/task/deletetask/:id", controllers.DeleteTask)
+	app.Delete("/task/delete/:id", controllers.DeleteTask)
 }
